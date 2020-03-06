@@ -5,9 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 
 public class DBUtils {
@@ -25,7 +22,7 @@ public class DBUtils {
     		// Check for match:
     		if (rs.next()==false) {
     			System.out.println("Fant ikke skuespiller med navn " + skuespiller + "\nMente du:");
-    			printClosestMatch(scanner, stmt, rs, "navn", skuespiller);
+    			listActors(scanner, conn);
     		}
     		else {
     			// Print result to user:
@@ -41,9 +38,6 @@ public class DBUtils {
     }
     
     // Use case 2: Finne hvilke filmer som en gitt skuespiller opptrer i.
-    // TODO: Query
-    // TODO: Print result
-    // TODO: Copy logic from above if no actor is found.
     public static void findMovies(Scanner scanner, Connection conn) {
     	System.out.println("Finn hvilke filmer skuespilleren opptrer i.\n----------------");
     	// Get input from user:
@@ -102,7 +96,7 @@ public class DBUtils {
         	}
     	}
     	catch (Exception e) {
-    		System.out.println("Error med database:\n"+e);
+    		System.err.println("Error med database:\n"+e);
     	}
     }
 
@@ -110,19 +104,23 @@ public class DBUtils {
     public static void insertNewMovie(Scanner scanner, Connection conn) {
     	System.out.println("Sett inn en ny film.\n----------------");
     	// TODO: get from user
+    	System.out.println("MedieID: ");
+    	Integer MedieID = scanner.nextInt();
     	System.out.println("SelskapsID: ");
     	Integer selskapsID = scanner.nextInt();
     	System.out.println("Tittel: ");
+    	scanner.nextLine();
     	String title = scanner.nextLine();
     	System.out.println("Length in minutes: ");
     	Integer len = scanner.nextInt();
     	System.out.println("Release Year: ");
     	Integer releaseYear = scanner.nextInt();
     	System.out.println("Release Date: ");
+    	scanner.nextLine();
     	String releaseDate = scanner.nextLine();
     	System.out.println("story: ");
     	String story = scanner.nextLine();
-    	String query = "INSERT INTO MedieProdukt (SelskapsID, Tittel, Lengde, UtgivelsesÅr, LanseringsDato, Storyline) VALUES ( '"+selskapsID+"', '"+title+"', '"+len+"', '"+releaseYear+"', '"+releaseDate+"', '"+story+"');";
+    	String query = "INSERT INTO MedieProdukt(MedieID, SelskapsID, Tittel, Lengde, UtgivelsesÅr, LanseringsDato, Storyline) VALUES ( '"+MedieID+"', '"+selskapsID+"', '"+title+"', '"+len+"', '"+releaseYear+"', '"+releaseDate+"', '"+story+"');";
     	
     	try {
     		// Statement and query:
@@ -135,59 +133,112 @@ public class DBUtils {
     	
     	listActors(scanner, conn);
     	
-    	System.err.println("Skriv inn personer som deltok i filmproduksjonen"
-    			+ "Skriv inn ID på personen."
-    			+ "For å avslutte, skriv '-1'");
     	
-    	
-    	
-    	Integer input = scanner.nextInt();
-    	try {
-			Statement stmt = conn.createStatement();
-			String query2 = "select * from Person";
-			ResultSet rs = stmt.executeQuery(query2);
-			List<Integer> nameList = new ArrayList<Integer>();
-			while (rs.next()) {
-				nameList.add(rs.getInt("PersonID"));
-			}
+		Integer input = 10;
+		while (input >= 0) {
 			
-			
-			while (input >= 0) {
-	    		if (Arrays.asList(nameList).contains(input) ){
-	    		}
-	    		else {
-	    			System.out.println("Your person was not in the system. Please add your person");
-	    			addActor(scanner,conn);
-	    		}
+			System.out.println("Skriv inn personer som deltok i filmproduksjonen"
+	    			+ "\nSkriv inn ID på personen."
+	    			+ "\nFor å avslutte, skriv '-1'");
+	    	
+	    	
+	    	
+	    	input = scanner.nextInt();
+	    	if ( input >= 0) {
+				System.out.println("Hvilken rolle hadde personen? 1: Skuespiller, 2: Regissør, 3: Manusforfatter");
+				Integer input2 = scanner.nextInt();
+				String Jobb;
+				String query3;
+				switch(input2) {
+				case 1:
+					Jobb = "Skuespiller";
+					break;
+				case 2:
+					Jobb = "Regissør";
+					break;
+				
+				case 3:
+					Jobb = "ManusForfatter";
+					break;
+				default:
+					System.out.println("Det er ingen rolle, da var det nok en skuespiller...");
+					Jobb = "Skuespiller";
+					break;
+				}
 	    		try {
-	    			String query3 = "INSERT INTO Skuespiller VALUES('"+input+"');"
+	    			if (Jobb == "Skuespiller") {
+	    				scanner.nextLine();
+	    				System.out.println("Hvilken rolle spilte skuespilleren?");
+	    				String Rolle = scanner.nextLine();
+	    				query3 = "INSERT INTO "+Jobb+"(PersonID, MedieID, Rolle) VALUES('"+input+"','"+MedieID+"', '"+Rolle+"');";
+	    			}else {
+	    				query3 = "INSERT INTO "+Jobb+"(PersonID, MedieID) VALUES('"+input+"','"+MedieID+"');";
+	    			}
 	    			PreparedStatement stmt = conn.prepareStatement(query3); 
 	                stmt.execute();
 	    			
 	    		}
 	    		catch (Exception e) {
+	    			System.err.println("Error: "+e);
 	    			
 	    		}
+	    		
+	  
 			} 
-    	}
-		catch (Exception e) {
-	    	System.out.println("Error med database:\n"+e);
-	    }
-    	
+		}
+		
+	
     	
     }
 
     
+    private static void listEpisodes(Scanner scanner, Connection conn) {
+    	try {
+    		System.out.println("Episoder:\n----------");
+    		Statement stmt = conn.createStatement();
+    		String query = "select * from MedieProdukt inner join Episode on MedieID=EpisodeID";
+    		ResultSet rs = stmt.executeQuery(query);
+    		while (rs.next()) {
+        		System.out.println("EpisodeID: " +rs.getString("EpisodeID")+ ". Tittel: " + rs.getString("Tittel") + ".");        		
+    		}
+    	}
+    	catch (Exception e) {
+    		System.out.println("Error med database:\n"+e);
+    	}
+    }
 
     // Use case 5: Sette inn ny anmeldelse av en episode av en serie.
     public static void insertReview(Scanner scanner, Connection conn) {
-    	System.out.println("Finne navnet på alle rollene til en skuespiller.\n----------------");
+    	System.out.println("Skriv annmeldelse av episode.\n----------------");
+    	listEpisodes(scanner, conn);
+    	scanner.nextLine(); // Flush enter-whitespace
+    	System.out.println("Hvilken episode vil du anmelde? Oppgi ID:");
+   		Integer episodeID = scanner.nextInt();
+   		System.out.println("Skriv din anmeldelse:");
+   		scanner.nextLine(); // Flush enter-whitespace
+   		String review = scanner.nextLine();
+   		
+   		System.out.println("Oppgi rangering mellom 1-10:");
+   		Integer rangering = scanner.nextInt();
+   		
+   		
+   		String query = "INSERT INTO Anmeldelse values (1, '"+episodeID+"', '"+review+"', '"+rangering+"');";
+   		
+   		try {
+   			Statement stmt = conn.createStatement();
+			stmt.execute(query);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+   		
+   		
     }
     
-	// __TEST_METHODS__
+	// __METHODS__
     public static void listActors(Scanner scanner, Connection conn) {
     	try {
-    		System.out.println("Test: Hent skuespillere\n----------");
+    		System.out.println("Skuespillerne:\n----------");
     		Statement stmt = conn.createStatement();
     		String query = "select * from Person";
     		ResultSet rs = stmt.executeQuery(query);
@@ -244,7 +295,7 @@ public class DBUtils {
      * @param input: Input from user
      */
     private static void printClosestMatch(Scanner scanner, Statement stmt, ResultSet rs, String column, String input) {
-    	String firstLetter = String.valueOf(input.charAt(0));
+    	//String firstLetter = String.valueOf(input.charAt(0));
 		String query = "FINN NAVN PÅ ROLLER MED SAMME FORBOKSTAV"; // TODO:
 		try {
 			ResultSet columnName = stmt.executeQuery(query);

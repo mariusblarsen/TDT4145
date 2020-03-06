@@ -32,7 +32,6 @@ public class DBProject {
 				+ " 3:\tFinne hvilke filmselskap som har flest filmer innen en sjanger\n"
 				+ " 4:\tSette inn en ny film\n"
 				+ " 5:\tSette inn annmeldelse.\n"
-				+ " 6 eller 7 for test-funksjoner \n"
 				+ "Eller 0 for å avslutte");
 		while (cont) {
 			System.out.println(".\n.");
@@ -64,12 +63,6 @@ public class DBProject {
 					break;
 				case 5:
 					DBUtils.insertReview(scanner, con);
-					break;
-				case 6:
-					DBUtils.listActors(scanner, con);
-					break;
-				case 7:
-					DBUtils.addActor(scanner, con);
 					break;
 				default:
 					System.out.println("Ikke gyldig valg");
